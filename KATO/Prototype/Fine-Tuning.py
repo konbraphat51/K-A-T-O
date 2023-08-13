@@ -3,7 +3,7 @@ import pandas as pd
 TEACHER_DATA = "teacher_data_2015.csv"
 SAMPLE_N = 50
 
-list_train = pd.read_csv(TEACHER_DATA)
+list_train = pd.read_csv(TEACHER_DATA).sample(SAMPLE_N)
 
 #https://qiita.com/Mizuiro__sakura/items/058d2590d31e9f8aeeaa
 
