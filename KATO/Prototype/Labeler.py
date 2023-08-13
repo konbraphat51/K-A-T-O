@@ -86,7 +86,7 @@ class Laberer:
             questions.append(q)
             answers.append(a)
         
-        df_teacher_data = pd.DataFrame(zip(questions, answers), columns=["subject", "text"])
+        df_teacher_data = pd.DataFrame(zip(questions, answers), columns=["original", "generated"])
         
         return df_teacher_data
     
