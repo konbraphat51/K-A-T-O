@@ -17,11 +17,8 @@ class Laberer:
     def __init__(self):
         self.nlp = spacy.load('ja_ginza')
     
-    def run(self, year = 2015, sample_n = 30):
+    def run(self, year = 2015):
         target_indicies_models = self.get_target_transcription_indicies(year)
-
-        #sample_n個だけ抽出
-        target_indicies_models = random.sample(target_indicies_models, sample_n)
     
         sub2text = []
         for index, model in tqdm(target_indicies_models):
@@ -52,12 +49,14 @@ class Laberer:
         
         output = []
         
-        for text in df_transcription["text"]:    
-            doc = self.nlp(text)
-            for sent in doc.sents:
-                subject = self.get_subject(sent)
-                if subject != None:
-                   output.append([subject, sent.text]) 
+        #for text in df_transcription["text"]:    
+        text = "".join(df_transcription["text"])
+        
+        doc = self.nlp(text)
+        for sent in doc.sents:
+            subject = self.get_subject(sent)
+            if subject != None:
+                output.append([subject, sent.text]) 
         
         return output
     
@@ -88,7 +87,7 @@ class Laberer:
         
         df_teacher_data = pd.DataFrame(zip(questions, answers), columns=["original", "generated"])
         
-        return df_teacher_data
+        return df_teacher_data.sample(frac=1)
     
     def save_data(self, df_teacher_data, year):
         df_teacher_data.to_csv(pathlib.Path(__file__).parent / ("teacher_data_" + str(year) + ".csv"), index=False)
