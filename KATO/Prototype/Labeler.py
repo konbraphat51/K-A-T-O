@@ -17,7 +17,7 @@ class Laberer:
     def __init__(self):
         self.nlp = spacy.load('ja_ginza')
     
-    def run(self, year = 2015):
+    def run(self, year = 2023):
         target_indicies_models = self.get_target_transcription_indicies(year)
     
         sub2text = []
@@ -46,19 +46,24 @@ class Laberer:
         
     def dig_transcription(self, index, model):
         df_transcription = pd.read_csv(Consts.data_folder / "Transcription_raw" / Utils.make_transcription_file_name(index, model))
-        
-        output = []
-        
-        #for text in df_transcription["text"]:    
-        text = "".join(df_transcription["text"])
-        
-        doc = self.nlp(text)
-        for sent in doc.sents:
-            subject = self.get_subject(sent)
-            if subject != None:
-                output.append([subject, sent.text]) 
-        
-        return output
+        return self.dig_sentence(df_transcription["text"])
+            
+    def dig_sentence(self, texts):
+        try:
+            output = []
+            
+            #for text in df_transcription["text"]:    
+            text = "".join(texts)
+            
+            doc = self.nlp(text)
+            for sent in doc.sents:
+                subject = self.get_subject(sent)
+                if subject != None:
+                    output.append([subject, sent.text]) 
+            
+            return output
+        except:
+            return self.dig_sentence(texts[:len(texts)//2]) + self.dig_sentence(texts[len(texts)//2:])
     
     def get_subject(self, sentence):
         '''
