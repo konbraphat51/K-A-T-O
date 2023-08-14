@@ -1,9 +1,9 @@
 import pandas as pd
 import pathlib
 
-TEACHER_DATA = pathlib.Path(__file__).parent / "teacher_data_2015.csv"
-OUTPUT_DIR = pathlib.Path(__file__).parent / "output_dir_medium2015"
-SAMPLE_N = 23
+TEACHER_DATA = pathlib.Path(__file__).parent / "teacher_data_2023_small.csv"
+OUTPUT_DIR = pathlib.Path(__file__).parent / "output_dir_large2023edit"
+SAMPLE_N = 30
 
 list_train = pd.read_csv(TEACHER_DATA).sample(SAMPLE_N)
 
@@ -11,7 +11,7 @@ list_train = pd.read_csv(TEACHER_DATA).sample(SAMPLE_N)
 
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
-MODEL_NAME="cyberagent/open-calm-medium"  # modelを選択してください
+MODEL_NAME="cyberagent/open-calm-large"  # modelを選択してください
 tokenizer=AutoTokenizer.from_pretrained(MODEL_NAME)
 model=AutoModelForCausalLM.from_pretrained(MODEL_NAME).to("cuda")
 
@@ -55,11 +55,11 @@ from transformers import Trainer, TrainingArguments
 training_config = TrainingArguments(
   output_dir = OUTPUT_DIR,  # 出力したいディレクトリを入力してください
   num_train_epochs = 4, 
-  per_device_train_batch_size = 8,
-  per_device_eval_batch_size = 8,
+  per_device_train_batch_size = 2,#8,
+  per_device_eval_batch_size = 2,#8,
   warmup_steps = 100,
   weight_decay = 0.1,
-  save_steps = 10000  # 用いるdatasetに応じてsave_stepsは変えてください
+  save_steps = 1500  # 用いるdatasetに応じてsave_stepsは変えてください
 )
 
 trainer = Trainer(
