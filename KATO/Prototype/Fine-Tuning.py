@@ -5,18 +5,19 @@ import pathlib
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 from collections import defaultdict
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset as TorchDataset
+from torch.utils.data import DataLoader
 from transformers import Trainer, TrainingArguments
 
 class FineTuner:
-  def run(year = "2023", edit=True, calm_model="1b", sample_n = -1, n_token = 512):
+  def run(year = "2023", edit=False, calm_model="3b", sample_n = 100, n_token = 512):
     if edit:
       EDIT_STR = "_edit"
     else:
       EDIT_STR = ""
     
-    TEACHER_DATA = pathlib.Path(__file__).parent / "teacher_data_"+year+EDIT_STR+".csv"
-    OUTPUT_DIR = pathlib.Path(__file__).parent / "output_dir_"+calm_model+"_"+year+EDIT_STR
+    TEACHER_DATA = pathlib.Path(__file__).parent / ("teacher_data_"+year+EDIT_STR+".csv")
+    OUTPUT_DIR = pathlib.Path(__file__).parent / ("output_dir_"+calm_model+"_"+year+EDIT_STR)
 
     if sample_n > 0:
       list_train = pd.read_csv(TEACHER_DATA).sample(sample_n)
@@ -44,9 +45,7 @@ class FineTuner:
 
       return dataset
 
-
-
-    class Dataset(Dataset):
+    class Dataset(TorchDataset):
       def __init__(self, dataset, is_test=False):
         self.dataset = dataset
         self.is_test = is_test
@@ -65,8 +64,7 @@ class FineTuner:
     training_config = TrainingArguments(
       output_dir = OUTPUT_DIR,  # 出力したいディレクトリを入力してください
       num_train_epochs = 4, 
-      per_device_train_batch_size = 2,#8,
-      per_device_eval_batch_size = 2,#8,
+      per_device_train_batch_size = 1,
       warmup_steps = 100,
       weight_decay = 0.1,
       save_steps = 1500  # 用いるdatasetに応じてsave_stepsは変えてください
@@ -82,3 +80,7 @@ class FineTuner:
     trainer.train()
 
     model.save_pretrained(OUTPUT_DIR) 
+    
+if __name__ == "__main__":
+  FineTuner.run(year = "2022", edit=False, calm_model="3b")
+  
