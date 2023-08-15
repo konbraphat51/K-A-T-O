@@ -1,4 +1,5 @@
 from KATO.Prototype.Utils import Consts, Utils
+from KATO.rake_ja import JapaneseRake, Tokenizer
 import pandas as pd
 import spacy
 from spacy.symbols import nsubj, VERB
@@ -14,8 +15,13 @@ class Laberer:
     の学習データを作成する
     '''
     
+    SENTENCE_MIN = 10
+    SENTENCE_MAX = 50
+    
     def __init__(self):
         self.nlp = spacy.load('ja_ginza')
+        self.rake = JapaneseRake(max_length=3)
+        self.tokenizer = Tokenizer(rawargs=Consts.mecab_params)
     
     def run(self, year = 2023):
         target_indicies_models = self.get_target_transcription_indicies(year)
@@ -46,7 +52,7 @@ class Laberer:
         
     def dig_transcription(self, index, model):
         df_transcription = pd.read_csv(Consts.data_folder / "Transcription_raw" / Utils.make_transcription_file_name(index, model))
-        return self.dig_sentence(df_transcription["text"])
+        return self.dig_sentence(df_transcription[~df_transcription["text"].duplicated()]["text"])
             
     def dig_sentence(self, texts):
         try:
@@ -57,6 +63,9 @@ class Laberer:
             
             doc = self.nlp(text)
             for sent in doc.sents:
+                if not self.SENTENCE_MIN <= len(sent) <= self.SENTENCE_MAX:
+                    continue
+                
                 subject = self.get_subject(sent)
                 if subject != None:
                     output.append([subject, sent.text]) 
@@ -69,13 +78,13 @@ class Laberer:
         '''
         主語を取得する
         '''
+            
+        tokens = self.tokenizer.tokenize(sentence)
         
-        for token in sentence:
-            if token.dep == nsubj:
-                return token.text
+        self.rake.extract_keywords_from_text(tokens)
+        subject = self.rake.get_ranked_phrases()[0]
             
-            
-        return None
+        return subject
     
     def make_teacher_data(self, sub2text):
         '''
@@ -85,8 +94,8 @@ class Laberer:
         questions = []
         answers = []
         for sub, text in sub2text:
-            q = "Q." + sub + "についてどう思う？"
-            a = q + " A." + text
+            q = "Q." + sub + "についてどう思う？ A."
+            a = q + text
             questions.append(q)
             answers.append(a)
         
@@ -100,4 +109,4 @@ class Laberer:
     
 if __name__ == "__main__":
     laberer = Laberer()
-    laberer.run()
+    laberer.run(year = 2022)
