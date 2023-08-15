@@ -1,4 +1,5 @@
 #https://qiita.com/Mizuiro__sakura/items/058d2590d31e9f8aeeaa
+#https://note.com/npaka/n/na5b8e6f749ce
 
 import pandas as pd
 import pathlib
@@ -7,7 +8,8 @@ import torch
 from collections import defaultdict
 from torch.utils.data import Dataset as TorchDataset
 from torch.utils.data import DataLoader
-from transformers import Trainer, TrainingArguments
+from transformers import Trainer, TrainingArguments, DataCollatorForLanguageModeling
+from peft import LoraConfig, get_peft_model, prepare_model_for_int8_training, TaskType
 
 class FineTuner:
   def run(year = "2023", edit=False, calm_model="3b", sample_n = 100, n_token = 512):
@@ -59,28 +61,49 @@ class FineTuner:
         return len(self.dataset["input_ids"])
 
     dataset_train = Dataset(preprocess(list_train))
-
-
-    training_config = TrainingArguments(
-      output_dir = OUTPUT_DIR,  # 出力したいディレクトリを入力してください
-      num_train_epochs = 4, 
-      per_device_train_batch_size = 1,
-      warmup_steps = 100,
-      weight_decay = 0.1,
-      save_steps = 1500  # 用いるdatasetに応じてsave_stepsは変えてください
+    
+    # LoRAのパラメータ
+    lora_config = LoraConfig(
+        r= 8, 
+        lora_alpha=16,
+        target_modules=["query_key_value"],
+        lora_dropout=0.05,
+        bias="none",
+        task_type=TaskType.CAUSAL_LM
     )
 
+    # モデルの前処理
+    model = prepare_model_for_int8_training(model)
+
+    # LoRAモデルの準備
+    model = get_peft_model(model, lora_config)
+
+    training_config = TrainingArguments(
+      output_dir = OUTPUT_DIR / "Learned",  # 出力したいディレクトリを入力してください
+      num_train_epochs=3,
+      learning_rate=3e-4,
+      logging_steps=200,
+      save_strategy="steps",
+      save_steps=200,
+      report_to="none",
+      save_total_limit=3,
+      push_to_hub=False,
+      auto_find_batch_size=True,
+      do_eval=False
+    )
+  
     trainer = Trainer(
         model = model,                         
         args = training_config,
         train_dataset = dataset_train,
-        
+        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False)
     )
-
+    model.config.use_cache = False
     trainer.train()
+    model.config.use_cache = True
 
-    model.save_pretrained(OUTPUT_DIR) 
+    model.save_pretrained(OUTPUT_DIR / "peft") 
     
 if __name__ == "__main__":
-  FineTuner.run(year = "2022", edit=False, calm_model="3b")
+  FineTuner.run(year = "2015", edit=True, calm_model="3b", sample_n=30)
   

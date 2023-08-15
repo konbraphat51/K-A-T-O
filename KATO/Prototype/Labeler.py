@@ -55,11 +55,9 @@ class Laberer:
         return self.dig_sentence(df_transcription[~df_transcription["text"].duplicated()]["text"])
             
     def dig_sentence(self, texts):
-        try:
-            output = []
-            
-            #for text in df_transcription["text"]:    
-            text = "".join(texts)
+        text = "".join(texts)
+        if len(text) < 1e4:
+            output = []  
             
             doc = self.nlp(text)
             for sent in doc.sents:
@@ -71,20 +69,23 @@ class Laberer:
                     output.append([subject, sent.text]) 
             
             return output
-        except:
-            return self.dig_sentence(texts[:len(texts)//2]) + self.dig_sentence(texts[len(texts)//2:])
+        else:
+            return self.dig_sentence(texts.iloc[:len(texts)//2]) + self.dig_sentence(texts.iloc[len(texts)//2:])
     
     def get_subject(self, sentence):
         '''
         主語を取得する
         '''
             
-        tokens = self.tokenizer.tokenize(sentence)
+        tokens = self.tokenizer.tokenize(str(sentence))
         
         self.rake.extract_keywords_from_text(tokens)
-        subject = self.rake.get_ranked_phrases()[0]
-            
-        return subject
+        
+        subjects = self.rake.get_ranked_phrases()
+        if len(subjects) == 0:
+            return None
+        else:        
+            return subjects[0].replace(" ", "")
     
     def make_teacher_data(self, sub2text):
         '''
@@ -109,4 +110,4 @@ class Laberer:
     
 if __name__ == "__main__":
     laberer = Laberer()
-    laberer.run(year = 2022)
+    laberer.run(year = 2023)
