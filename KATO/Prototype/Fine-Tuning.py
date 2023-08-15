@@ -10,6 +10,7 @@ from torch.utils.data import Dataset as TorchDataset
 from torch.utils.data import DataLoader
 from transformers import Trainer, TrainingArguments, DataCollatorForLanguageModeling
 from peft import LoraConfig, get_peft_model, prepare_model_for_int8_training, TaskType
+from sklearn.model_selection import train_test_split
 
 class FineTuner:
   def run(year = "2023", edit=False, calm_model="3b", sample_n = 100, n_token = 512):
@@ -22,9 +23,11 @@ class FineTuner:
     OUTPUT_DIR = pathlib.Path(__file__).parent / ("output_dir_"+calm_model+"_"+year+EDIT_STR)
 
     if sample_n > 0:
-      list_train = pd.read_csv(TEACHER_DATA).sample(sample_n)
+      list_all = pd.read_csv(TEACHER_DATA).sample(sample_n)
     else:
-      list_train = pd.read_csv(TEACHER_DATA)
+      list_all = pd.read_csv(TEACHER_DATA)
+      
+    list_train, list_test = train_test_split(list_all, test_size=0.15, random_state=334)
 
     MODEL_NAME="cyberagent/open-calm-"+calm_model  # modelを選択してください
     tokenizer=AutoTokenizer.from_pretrained(MODEL_NAME, load_in_8bit=True, device_map="auto")
@@ -61,6 +64,7 @@ class FineTuner:
         return len(self.dataset["input_ids"])
 
     dataset_train = Dataset(preprocess(list_train))
+    dataset_eval = Dataset(preprocess(list_test, is_test=True))
     
     # LoRAのパラメータ
     lora_config = LoraConfig(
@@ -80,11 +84,13 @@ class FineTuner:
 
     training_config = TrainingArguments(
       output_dir = OUTPUT_DIR / "Learned",  # 出力したいディレクトリを入力してください
-      num_train_epochs=3,
+      num_train_epochs=4,
       learning_rate=3e-4,
       logging_steps=200,
       save_strategy="steps",
       save_steps=200,
+      eval_steps=200,
+      evaluation_strategy="steps",
       report_to="none",
       save_total_limit=3,
       push_to_hub=False,
@@ -96,6 +102,7 @@ class FineTuner:
         model = model,                         
         args = training_config,
         train_dataset = dataset_train,
+        eval_dataset = dataset_eval,
         data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False)
     )
     model.config.use_cache = False
@@ -105,5 +112,5 @@ class FineTuner:
     model.save_pretrained(OUTPUT_DIR / "peft") 
     
 if __name__ == "__main__":
-  FineTuner.run(year = "2015", edit=True, calm_model="3b", sample_n=30)
+  FineTuner.run(year = "2015", edit=False, calm_model="small", sample_n=300)
   
