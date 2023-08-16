@@ -42,12 +42,13 @@ class FineTuner:
           original_sentence, generated_sentence = example["original"], example["generated"]
 
           for i, sentence in enumerate(generated_sentence):
-            input = tokenizer(original_sentence, max_length=n_token, padding="max_length", truncation=True)["input_ids"]
-            labels = tokenizer(generated_sentence, max_length=n_token, padding="max_length", truncation=True)["input_ids"]
-
+            #input = tokenizer(original_sentence, max_length=n_token, padding="max_length", truncation=True)["input_ids"]
+            #labels = tokenizer(generated_sentence, max_length=n_token, padding="max_length", truncation=True)["input_ids"]
+            output = tokenizer(generated_sentence, max_length=n_token, padding="max_length", truncation=True)["input_ids"]
             if (not is_test) or (i == 0):
-              dataset["input_ids"].append(input)
-              dataset["labels"].append(labels)
+              #dataset["input_ids"].append(input)
+              #dataset["labels"].append(labels)
+              dataset["input_ids"].append(output)
 
       return dataset
 
@@ -58,7 +59,7 @@ class FineTuner:
 
       def __getitem__(self, idx):
         data = {'input_ids': torch.tensor(self.dataset["input_ids"][idx])}
-        data['labels']=torch.tensor(self.dataset["labels"][idx])
+        #data['labels']=torch.tensor(self.dataset["labels"][idx])
         return data
 
       def __len__(self):
@@ -94,10 +95,11 @@ class FineTuner:
       save_total_limit=3,
       push_to_hub=False,
       do_eval=False,
-      per_device_train_batch_size = 1,
-      per_device_eval_batch_size = 1,
+      per_device_train_batch_size = 4,
+      per_device_eval_batch_size = 4,
       warmup_steps = 100,
-      weight_decay = 0.1
+      weight_decay = 0.1,
+      #learning_rate=5e-4
     )
   
     trainer = Trainer(
@@ -113,5 +115,5 @@ class FineTuner:
     model.save_pretrained(OUTPUT_DIR / "peft") 
     
 if __name__ == "__main__":
-  FineTuner.run(year = "2015", edit=False, calm_model="1b", sample_n=50, useint8=True)
+  FineTuner.run(year = "2015", edit=False, calm_model="1b", sample_n=100, useint8=True)
   
