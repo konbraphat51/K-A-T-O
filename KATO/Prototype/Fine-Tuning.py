@@ -13,7 +13,7 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_int8_training, Ta
 from sklearn.model_selection import train_test_split
 
 class FineTuner:
-  def run(year = "2023", edit=False, calm_model="3b", sample_n = 100, n_token = 512):
+  def run(useint8 = True, year = "2023", edit=False, calm_model="3b", sample_n = 100, n_token = 512):
     if edit:
       EDIT_STR = "_edit"
     else:
@@ -27,11 +27,12 @@ class FineTuner:
     else:
       list_all = pd.read_csv(TEACHER_DATA)
       
-    list_train, list_test = train_test_split(list_all, test_size=0.15, random_state=334)
+    #list_train, list_test = train_test_split(list_all, test_size=0.15, random_state=334)
+    list_train = list_all
 
     MODEL_NAME="cyberagent/open-calm-"+calm_model  # modelを選択してください
-    tokenizer=AutoTokenizer.from_pretrained(MODEL_NAME, load_in_8bit=True, device_map="auto")
-    model=AutoModelForCausalLM.from_pretrained(MODEL_NAME, load_in_8bit=True, device_map="auto")
+    tokenizer=AutoTokenizer.from_pretrained(MODEL_NAME, load_in_8bit=useint8, device_map="auto")
+    model=AutoModelForCausalLM.from_pretrained(MODEL_NAME, load_in_8bit=useint8, device_map="auto")
 
     def preprocess(examples, is_test=False):
       dataset = defaultdict(list)
@@ -64,7 +65,7 @@ class FineTuner:
         return len(self.dataset["input_ids"])
 
     dataset_train = Dataset(preprocess(list_train))
-    dataset_eval = Dataset(preprocess(list_test, is_test=True))
+    #dataset_eval = Dataset(preprocess(list_test, is_test=True))
     
     # LoRAのパラメータ
     lora_config = LoraConfig(
@@ -76,33 +77,33 @@ class FineTuner:
         task_type=TaskType.CAUSAL_LM
     )
 
-    # モデルの前処理
-    model = prepare_model_for_int8_training(model)
+    if useint8:
+      # モデルの前処理
+      model = prepare_model_for_int8_training(model)
 
-    # LoRAモデルの準備
-    model = get_peft_model(model, lora_config)
+      # LoRAモデルの準備
+      model = get_peft_model(model, lora_config)
 
     training_config = TrainingArguments(
       output_dir = OUTPUT_DIR / "Learned",  # 出力したいディレクトリを入力してください
       num_train_epochs=4,
-      learning_rate=3e-4,
       logging_steps=200,
       save_strategy="steps",
-      save_steps=200,
-      eval_steps=200,
-      evaluation_strategy="steps",
+      save_steps=100000,
       report_to="none",
       save_total_limit=3,
       push_to_hub=False,
-      auto_find_batch_size=True,
-      do_eval=False
+      do_eval=False,
+      per_device_train_batch_size = 1,
+      per_device_eval_batch_size = 1,
+      warmup_steps = 100,
+      weight_decay = 0.1
     )
   
     trainer = Trainer(
         model = model,                         
         args = training_config,
         train_dataset = dataset_train,
-        eval_dataset = dataset_eval,
         data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False)
     )
     model.config.use_cache = False
@@ -112,5 +113,5 @@ class FineTuner:
     model.save_pretrained(OUTPUT_DIR / "peft") 
     
 if __name__ == "__main__":
-  FineTuner.run(year = "2015", edit=False, calm_model="small", sample_n=300)
+  FineTuner.run(year = "2015", edit=False, calm_model="1b", sample_n=50, useint8=True)
   
