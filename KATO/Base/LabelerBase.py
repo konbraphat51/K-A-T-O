@@ -1,4 +1,4 @@
-from KATO import Consts
+from KATO import Consts, Utils
 import pandas as pd
 from tqdm import tqdm
 import pathlib
