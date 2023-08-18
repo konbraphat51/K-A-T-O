@@ -8,7 +8,7 @@ class LabelerBase:
     教師データを作成する抽象クラス。
     '''
     
-    def run(self, year = 2023):
+    def run(self, year: int):
         target_indicies_models = self.get_target_transcription_indicies(year)
     
         datas = []
@@ -37,11 +37,13 @@ class LabelerBase:
         
     def dig_transcription(self, index, model):
         df_transcription = pd.read_csv(Consts.data_folder / "Transcription_raw" / Utils.make_transcription_file_name(index, model))
-        return self.process_transcription(df_transcription[~df_transcription["text"].duplicated()]["text"])
+        return self.process_transcription(df_transcription["text"])
     
-    def process_transcription(self, transcription):
+    def process_transcription(self, transcriptions):
         '''
-        書き起こしデータを処理するabstract関数。入力は書き起こしテキストのSeries
+        書き起こしデータを処理するabstract関数。  
+        入力は書き起こしテキストのSeries  
+        出力は生成文のリスト
         '''
         raise NotImplementedError()
     
@@ -56,5 +58,5 @@ class LabelerBase:
         return df_teacher_data.sample(frac=1)
     
     def save_data(self, df_teacher_data, year):
-        df_teacher_data.to_csv(pathlib.Path(__file__).parent / ("teacher_data_" + str(year) + ".csv"), index=True)
+        df_teacher_data.to_csv(pathlib.Path(__file__).parent / (self.data_name + "_" + str(year) + ".csv"), index=True)
         return
