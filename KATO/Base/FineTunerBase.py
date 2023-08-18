@@ -85,9 +85,9 @@ class FineTunerBase:
         '''
         data_path = self.get_teacher_data_path(self.finetuner_properties.year)
         if self.finetuner_properties.sample_n > 0:
-            return pd.read_csv(data_path).sample(self.finetuner_properties.sample_n)
+            return pd.read_csv(data_path, index_col=0).sample(self.finetuner_properties.sample_n)
         else:
-            return pd.read_csv(data_path)
+            return pd.read_csv(data_path, index_col=0)
 
     def get_teacher_data_path(self):
         return pathlib.Path(__file__).parent / ("teacher_data_"+self.finetuner_properties.year+".csv")
@@ -176,7 +176,3 @@ class FineTunerPropertiesBase:
         
     def get_output_dir(self):
         return pathlib.Path(__file__).parent / ("output_dir_"+ self.id)    
-            
-if __name__ == "__main__":
-  FineTuner.run(year = "2015", edit=False, calm_model="1b", sample_n=100, useint8=True)
-  

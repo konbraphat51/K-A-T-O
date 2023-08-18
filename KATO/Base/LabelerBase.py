@@ -50,7 +50,7 @@ class LabelerBase:
         教師データを作成する
         '''
         
-        df_teacher_data = pd.DataFrame(datas, columns=["generated"])
+        df_teacher_data = pd.DataFrame(datas, columns=["text"])
         
         #シャッフル
         return df_teacher_data.sample(frac=1)
