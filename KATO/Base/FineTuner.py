@@ -90,7 +90,7 @@ class FineTuner:
         return pathlib.Path(__file__).parent / ("output_dir_"+ self.finetuner_properties.id)
     
     def get_original_model_name(self):
-        return ""
+        raise NotImplementedError()
     
 class FineTunerProperties:
     def __init__(
