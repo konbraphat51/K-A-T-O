@@ -13,7 +13,11 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_int8_training, Ta
 import datetime
 import json
 
-class FineTuner:
+class FineTunerBase:
+    '''
+    ファインチューニングを行う抽象クラス
+    '''
+
     def run(self, finetuner_properties):
         self.finetuner_properties = finetuner_properties
         df_teacher = self.get_teacher_data(finetuner_properties.year, finetuner_properties.sample_n)
@@ -72,6 +76,8 @@ class FineTuner:
         model.config.use_cache = True
 
         model.save_pretrained(self.get_output_dir() / "peft") 
+        
+        self.finetuner_properties.save()
 
     def get_teacher_data(self):
         '''
@@ -92,7 +98,11 @@ class FineTuner:
     def get_original_model_name(self):
         raise NotImplementedError()
     
-class FineTunerProperties:
+class FineTunerPropertiesBase:
+    '''
+    `FineTunerBase`のプロパティを管理するクラス
+    '''
+    
     def __init__(
         self,
         year:str = "2023",
