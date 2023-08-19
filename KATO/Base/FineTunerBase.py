@@ -8,7 +8,7 @@ import torch
 from collections import defaultdict
 from torch.utils.data import Dataset as TorchDataset
 from torch.utils.data import DataLoader
-from transformers import Trainer, TrainingArguments, DataCollatorForLanguageModeling
+from transformers import LlamaTokenizer, Trainer, TrainingArguments, DataCollatorForLanguageModeling
 from peft import LoraConfig, get_peft_model, prepare_model_for_int8_training, TaskType
 import datetime
 import json
@@ -180,7 +180,17 @@ class FineTunerBase:
         return self.finetuner_properties.output_dir / ("output_"+ self.finetuner_properties.id)   
     
     def get_tokenizer(self):
-        return AutoTokenizer.from_pretrained(self.finetuner_properties.tokenizer_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
+        #モデルによって場合分け
+        if self.finetuner_properties.tokenizer_model_name == "novelai/nerdstash-tokenizer-v1":
+            return LlamaTokenizer.from_pretrained(self.finetuner_properties.tokenizer_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
+        elif "line-corporation" in self.finetuner_properties.tokenizer_model_name:
+            return AutoTokenizer.from_pretrained(self.finetuner_properties.tokenizer_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto", use_fast=False)
+        else:
+            return AutoTokenizer.from_pretrained(self.finetuner_properties.tokenizer_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
     
     def get_lm(self):
-        return AutoModelForCausalLM.from_pretrained(self.finetuner_properties.lm_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
+        #モデルによって場合分け
+        if "stablelm" in self.finetuner_properties.lm_model_name:
+            return AutoModelForCausalLM.from_pretrained(self.finetuner_properties.lm_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto", trust_remote_code=True)
+        else:
+            return AutoModelForCausalLM.from_pretrained(self.finetuner_properties.lm_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
