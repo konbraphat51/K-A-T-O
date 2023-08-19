@@ -22,6 +22,8 @@ class FineTunerPropertiesBase:
         self,
         lm_model_name:str,
         tokenizer_model_name:str,
+        teacher_data_path:pathlib.Path,
+        output_dir:pathlib.Path,
         year:str = "2023",
         sample_n:int = 100,
         text_row:str = "text",
@@ -38,7 +40,7 @@ class FineTunerPropertiesBase:
         ta_train_batch_size:int = 8,
         ta_warmup_steps:int = 200,
         ta_weight_decay:float = 0.1,
-        ta_learning_rate:float = 5e-4
+        ta_learning_rate:float = 5e-4,
     ):
         self.args = locals()
         
@@ -51,6 +53,9 @@ class FineTunerPropertiesBase:
         self.n_token = n_token
         self.useint8 = useint8
         
+        self.teacher_data_path = teacher_data_path
+        self.output_dir = output_dir
+        
         # LoRAのパラメータ
         self.lora_config = LoraConfig(
             r= lora_r, 
@@ -62,6 +67,7 @@ class FineTunerPropertiesBase:
         )
         
         self.training_config = TrainingArguments(
+            output_dir=self.output_dir,
             num_train_epochs=ta_epochs,
             logging_steps=ta_logging_steps,
             save_strategy="steps",
@@ -85,17 +91,14 @@ class FineTunerPropertiesBase:
         time_str = current_time.strftime("%Y%m%d%H%M")
         self.id = time_str
         
-    def save(self):
+    def save(self, path: pathlib.Path):
         '''
         プロパティを保存する
         '''
         json_data = json.dumps(self.args)
-        with open(self.get_output_dir() / "properties.json", mode='w') as f:
+        with open(path / "properties.json", mode='w') as f:
             f.write(json_data)
         
-    def get_output_dir(self):
-        return pathlib.Path(__file__).parent / ("output_dir_"+ self.id) 
-
 class FineTunerBase:
     '''
     ファインチューニングを行う抽象クラス
@@ -105,8 +108,8 @@ class FineTunerBase:
 
     def run(self, finetuner_properties: FineTunerPropertiesBase):
         self.finetuner_properties = finetuner_properties
-        df_teacher = self.get_teacher_data(finetuner_properties.year, finetuner_properties.sample_n)
-        self.train_model(self, df_teacher)
+        df_teacher = self.get_teacher_data()
+        self.train_model(df_teacher)
 
     def train_model(self, df_teacher):
         tokenizer=AutoTokenizer.from_pretrained(self.finetuner_properties.tokenizer_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
@@ -145,9 +148,7 @@ class FineTunerBase:
 
         # LoRAモデルの準備
         model = get_peft_model(model, self.finetuner_properties.lora_config)
-    
-        self.finetuner_properties.training_config.output_dir = self.get_output_dir() / "Learned"
-    
+        
         trainer = Trainer(
             model = model,                         
             args = self.finetuner_properties.training_config,
@@ -160,20 +161,20 @@ class FineTunerBase:
 
         model.save_pretrained(self.get_output_dir() / "peft") 
         
-        self.finetuner_properties.save()
+        self.finetuner_properties.save(self.get_output_dir())
 
     def get_teacher_data(self):
         '''
         教師データ取り込み
         '''
-        data_path = self.get_teacher_data_path(self.finetuner_properties.year)
+        data_path = self.get_teacher_data_path()
         if self.finetuner_properties.sample_n > 0:
             return pd.read_csv(data_path, index_col=0).sample(self.finetuner_properties.sample_n)
         else:
             return pd.read_csv(data_path, index_col=0)
 
     def get_teacher_data_path(self):
-        return self.cwd / ("teacher_data_"+self.finetuner_properties.year+".csv")
+        return self.finetuner_properties.teacher_data_path / ("teacher_data_"+self.finetuner_properties.year+".csv")
 
     def get_output_dir(self):
-        return self.cwd / ("output_"+ self.finetuner_properties.id)   
+        return self.finetuner_properties.output_dir / ("output_"+ self.finetuner_properties.id)   
