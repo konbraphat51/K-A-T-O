@@ -112,8 +112,8 @@ class FineTunerBase:
         self.train_model(df_teacher)
 
     def train_model(self, df_teacher):
-        tokenizer=AutoTokenizer.from_pretrained(self.finetuner_properties.tokenizer_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
-        model=AutoModelForCausalLM.from_pretrained(self.finetuner_properties.lm_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
+        tokenizer = self.get_tokenizer()
+        model = self.get_lm()
 
         def preprocess(examples, is_test=False):
             dataset = defaultdict(list)
@@ -178,3 +178,9 @@ class FineTunerBase:
 
     def get_output_dir(self):
         return self.finetuner_properties.output_dir / ("output_"+ self.finetuner_properties.id)   
+    
+    def get_tokenizer(self):
+        return AutoTokenizer.from_pretrained(self.finetuner_properties.tokenizer_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
+    
+    def get_lm(self):
+        return AutoModelForCausalLM.from_pretrained(self.finetuner_properties.lm_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
