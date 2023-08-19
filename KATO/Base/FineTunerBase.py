@@ -13,21 +13,104 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_int8_training, Ta
 import datetime
 import json
 
+class FineTunerPropertiesBase:
+    '''
+    `FineTunerBase`のプロパティを管理するクラス
+    '''
+    
+    def __init__(
+        self,
+        lm_model_name:str,
+        tokenizer_model_name:str,
+        year:str = "2023",
+        sample_n:int = 100,
+        text_row:str = "text",
+        n_token = None,
+        useint8:bool = True,
+        lora_r:int = 8,
+        lora_alpha:int = 16,
+        lora_dropout:float = 0.05,
+        lora_bias:str = "none",
+        ta_epochs:int = 4,
+        ta_logging_steps:int = 200,
+        ta_save_steps:int = 100000,
+        ta_save_total_limit:int = 3,
+        ta_train_batch_size:int = 8,
+        ta_warmup_steps:int = 200,
+        ta_weight_decay:float = 0.1,
+        ta_learning_rate:float = 5e-4
+    ):
+        self.args = locals()
+        
+        self.initialize_id()
+        self.lm_model_name = lm_model_name
+        self.tokenizer_model_name = tokenizer_model_name
+        self.year = year
+        self.sample_n = sample_n
+        self.text_row = text_row
+        self.n_token = n_token
+        self.useint8 = useint8
+        
+        # LoRAのパラメータ
+        self.lora_config = LoraConfig(
+            r= lora_r, 
+            lora_alpha=lora_alpha,
+            target_modules=["query_key_value"],
+            lora_dropout=lora_dropout,
+            bias=lora_bias,
+            task_type=TaskType.CAUSAL_LM
+        )
+        
+        self.training_config = TrainingArguments(
+            num_train_epochs=ta_epochs,
+            logging_steps=ta_logging_steps,
+            save_strategy="steps",
+            save_steps=ta_save_steps,
+            report_to="none",
+            save_total_limit=ta_save_total_limit,
+            push_to_hub=False,
+            do_eval=False,
+            per_device_train_batch_size = ta_train_batch_size,
+            warmup_steps = ta_warmup_steps,
+            weight_decay = ta_weight_decay,
+            learning_rate=ta_learning_rate
+        )
+        
+    def initialize_id(self):
+        '''
+        今回の実験IDを作る
+        '''
+        current_time = datetime.datetime.now()
+        #YYYYMMDDhhmm
+        time_str = current_time.strftime("%Y%m%d%H%M")
+        self.id = time_str
+        
+    def save(self):
+        '''
+        プロパティを保存する
+        '''
+        json_data = json.dumps(self.args)
+        with open(self.get_output_dir() / "properties.json", mode='w') as f:
+            f.write(json_data)
+        
+    def get_output_dir(self):
+        return pathlib.Path(__file__).parent / ("output_dir_"+ self.id) 
+
 class FineTunerBase:
     '''
     ファインチューニングを行う抽象クラス
     '''
+    def __init__(self, cwd: pathlib.Path) -> None:
+        self.cwd = cwd
 
-    def run(self, finetuner_properties):
+    def run(self, finetuner_properties: FineTunerPropertiesBase):
         self.finetuner_properties = finetuner_properties
         df_teacher = self.get_teacher_data(finetuner_properties.year, finetuner_properties.sample_n)
         self.train_model(self, df_teacher)
 
     def train_model(self, df_teacher):
-        MODEL_NAME=self.get_original_model_name()
-        
-        tokenizer=AutoTokenizer.from_pretrained(MODEL_NAME, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
-        model=AutoModelForCausalLM.from_pretrained(MODEL_NAME, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
+        tokenizer=AutoTokenizer.from_pretrained(self.finetuner_properties.tokenizer_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
+        model=AutoModelForCausalLM.from_pretrained(self.finetuner_properties.lm_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
 
         def preprocess(examples, is_test=False):
             dataset = defaultdict(list)
@@ -90,89 +173,7 @@ class FineTunerBase:
             return pd.read_csv(data_path, index_col=0)
 
     def get_teacher_data_path(self):
-        return pathlib.Path(__file__).parent / ("teacher_data_"+self.finetuner_properties.year+".csv")
+        return self.cwd / ("teacher_data_"+self.finetuner_properties.year+".csv")
 
     def get_output_dir(self):
-        return pathlib.Path(__file__).parent / ("output_dir_"+ self.finetuner_properties.id)
-    
-    def get_original_model_name(self):
-        raise NotImplementedError()
-    
-class FineTunerPropertiesBase:
-    '''
-    `FineTunerBase`のプロパティを管理するクラス
-    '''
-    
-    def __init__(
-        self,
-        year:str = "2023",
-        sample_n:int = 100,
-        text_row:str = "text",
-        n_token = None,
-        useint8:bool = True,
-        lora_r:int = 8,
-        lora_alpha:int = 16,
-        lora_dropout:float = 0.05,
-        lora_bias:str = "none",
-        ta_epochs:int = 4,
-        ta_logging_steps:int = 200,
-        ta_save_steps:int = 100000,
-        ta_save_total_limit:int = 3,
-        ta_train_batch_size:int = 8,
-        ta_warmup_steps:int = 200,
-        ta_weight_decay:float = 0.1,
-        ta_learning_rate:float = 5e-4
-    ):
-        self.args = locals()
-        
-        self.initialize_id()
-        self.year = year
-        self.sample_n = sample_n
-        self.text_row = text_row
-        self.n_token = n_token
-        self.useint8 = useint8
-        
-        # LoRAのパラメータ
-        self.lora_config = LoraConfig(
-            r= lora_r, 
-            lora_alpha=lora_alpha,
-            target_modules=["query_key_value"],
-            lora_dropout=lora_dropout,
-            bias=lora_bias,
-            task_type=TaskType.CAUSAL_LM
-        )
-        
-        self.training_config = TrainingArguments(
-            num_train_epochs=ta_epochs,
-            logging_steps=ta_logging_steps,
-            save_strategy="steps",
-            save_steps=ta_save_steps,
-            report_to="none",
-            save_total_limit=ta_save_total_limit,
-            push_to_hub=False,
-            do_eval=False,
-            per_device_train_batch_size = ta_train_batch_size,
-            warmup_steps = ta_warmup_steps,
-            weight_decay = ta_weight_decay,
-            learning_rate=ta_learning_rate
-        )
-        
-    def initialize_id(self):
-        '''
-        今回の実験IDを作る
-        '''
-        current_time = datetime.datetime.now()
-        #YYYYMMDDhhmm
-        time_str = current_time.strftime("%Y%m%d%H%M")
-        self.id = time_str
-        
-    def save(self):
-        '''
-        プロパティを保存する
-        '''
-        json_data = json.dumps(self.args)
-        with open(self.get_output_dir() / "properties.json", mode='w') as f:
-            f.write(json_data)
-        
-    def get_output_dir(self):
-        return pathlib.Path(__file__).parent / ("output_dir_"+ self.id)    
+        return self.cwd / ("output_"+ self.finetuner_properties.id)   

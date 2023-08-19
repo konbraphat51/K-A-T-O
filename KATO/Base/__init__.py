@@ -1,2 +1,2 @@
-from FineTunerBase import FineTunerBase, FineTunerPropertiesBase
-from LabelerBase import LabelerBase
+from .FineTunerBase import FineTunerBase, FineTunerPropertiesBase
+from .LabelerBase import LabelerBase

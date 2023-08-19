@@ -8,6 +8,9 @@ class LabelerBase:
     教師データを作成する抽象クラス。
     '''
     
+    def __init__(self, cwd: pathlib.Path) -> None:
+        self.cwd = cwd
+    
     def run(self, year: int):
         target_indicies_models = self.get_target_transcription_indicies(year)
     
@@ -16,7 +19,7 @@ class LabelerBase:
             data = self.dig_transcription(index, model)
             datas.extend(data)
         
-        df_teacher_data = self.make_teacher_data(data)
+        df_teacher_data = self.make_teacher_data(datas)
     
         self.save_data(df_teacher_data, year)
     
@@ -37,7 +40,8 @@ class LabelerBase:
         
     def dig_transcription(self, index, model):
         df_transcription = pd.read_csv(Consts.data_folder / "Transcription_raw" / Utils.make_transcription_file_name(index, model))
-        return self.process_transcription(df_transcription["text"])
+        
+        return self.process_transcription(df_transcription["text"].dropna())
     
     def process_transcription(self, transcriptions):
         '''
@@ -58,5 +62,5 @@ class LabelerBase:
         return df_teacher_data.sample(frac=1)
     
     def save_data(self, df_teacher_data, year):
-        df_teacher_data.to_csv(pathlib.Path(__file__).parent / (self.data_name + "_" + str(year) + ".csv"), index=True)
+        df_teacher_data.to_csv(self.cwd / (self.data_name + "_" + str(year) + ".csv"), index=True)
         return
