@@ -78,7 +78,7 @@ class LMTester:
         output = self.tokenizer.decode(tokens[0], skip_special_tokens=True)
         return output
         
-    def test_talking(self, prompts: list(str), params: LMParameters):
+    def test_talking(self, prompts, params: LMParameters):
         '''
         複数プロンプトを一気に渡す
         '''
@@ -117,7 +117,7 @@ class LMTester:
         
     def prepare_peft(self, peft_name):
         return PeftModel.from_pretrained(
-            self.model,
+            self.lm,
             peft_name,
             device_map="auto"
         )

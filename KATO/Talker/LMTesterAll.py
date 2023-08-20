@@ -16,10 +16,10 @@ if __name__ == '__main__':
     )
     
     lmtester.prepare(
-        lm_model_name = "microsoft/DialoGPT-small",
-        tokenizer_model_name = "microsoft/DialoGPT-small",
-        useint8 = False,
-        peft_model_name = None
+        lm_model_name = "line-corporation/japanese-large-lm-3.6b",
+        tokenizer_model_name = "line-corporation/japanese-large-lm-3.6b",
+        useint8 = True,
+        peft_model_name = "konbraphat51/KATO_talker_202308200416"
     )
     
     start_list = [
