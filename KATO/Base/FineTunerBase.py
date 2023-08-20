@@ -93,9 +93,26 @@ class FineTunerPropertiesBase:
         '''
         プロパティを保存する
         '''
-        self.args = locals()
+        args = {}
+        args["id"] = self.id
+        args["lm_model_name"] = self.lm_model_name
+        args["tokenizer_model_name"] = self.tokenizer_model_name
+        args["year"] = self.year
+        args["sample_n"] = self.sample_n
+        args["text_row"] = self.text_row
+        args["n_token"] = self.n_token
+        args["useint8"] = self.useint8
+        args["lora_r"] = self.lora_config.r
+        args["lora_alpha"] = self.lora_config.lora_alpha
+        args["lora_dropout"] = self.lora_config.lora_dropout
+        args["lora_bias"] = self.lora_config.bias
+        args["ta_epochs"] = self.training_config.num_train_epochs
+        args["ta_batch_size"] = self.training_config.per_device_train_batch_size
+        args["ta_warmup_steps"] = self.training_config.warmup_steps
+        args["ta_weight_decay"] = self.training_config.weight_decay
+        args["ta_learning_rate"] = self.training_config.learning_rate
         
-        json_data = json.dumps(self.args)
+        json_data = json.dumps(args)
         with open(path / "properties.json", mode='w') as f:
             f.write(json_data)
         

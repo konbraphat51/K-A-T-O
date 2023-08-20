@@ -25,9 +25,9 @@ class LMParameters:
         '''
         プロパティを保存する
         '''
-        self.args = locals()
+        args = vars(self)
         
-        json_data = json.dumps(self.args)
+        json_data = json.dumps(args)
         with open(path / "lm_properties.json", mode='w') as f:
             f.write(json_data)
 
