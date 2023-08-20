@@ -41,9 +41,7 @@ class FineTunerPropertiesBase:
         ta_warmup_steps:int = 200,
         ta_weight_decay:float = 0.1,
         ta_learning_rate:float = 5e-4,
-    ):
-        self.args = locals()
-        
+    ):  
         self.initialize_id()
         self.lm_model_name = lm_model_name
         self.tokenizer_model_name = tokenizer_model_name
@@ -95,6 +93,8 @@ class FineTunerPropertiesBase:
         '''
         プロパティを保存する
         '''
+        self.args = locals()
+        
         json_data = json.dumps(self.args)
         with open(path / "properties.json", mode='w') as f:
             f.write(json_data)
@@ -162,6 +162,12 @@ class FineTunerBase:
         model.save_pretrained(self.get_output_dir() / "peft") 
         
         self.finetuner_properties.save(self.get_output_dir())
+        
+        #終了処理
+        del tokenizer
+        del model
+        del trainer
+        torch.cuda.empty_cache()        
 
     def get_teacher_data(self):
         '''
