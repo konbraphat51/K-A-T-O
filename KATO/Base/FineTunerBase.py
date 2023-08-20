@@ -205,7 +205,7 @@ class FineTunerBase:
     def get_tokenizer(self):
         #モデルによって場合分け
         if self.finetuner_properties.tokenizer_model_name == "novelai/nerdstash-tokenizer-v1":
-            return LlamaTokenizer.from_pretrained(self.finetuner_properties.tokenizer_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")
+            return LlamaTokenizer.from_pretrained(self.finetuner_properties.tokenizer_model_name, device_map="auto")
         elif "line-corporation" in self.finetuner_properties.tokenizer_model_name:
             return AutoTokenizer.from_pretrained(self.finetuner_properties.tokenizer_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto", use_fast=False)
         else:
@@ -214,6 +214,6 @@ class FineTunerBase:
     def get_lm(self):
         #モデルによって場合分け
         if "stablelm" in self.finetuner_properties.lm_model_name:
-            return AutoModelForCausalLM.from_pretrained(self.finetuner_properties.lm_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto", trust_remote_code=True)
+            return AutoModelForCausalLM.from_pretrained(self.finetuner_properties.lm_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto", trust_remote_code=True, variant="int8")
         else:
             return AutoModelForCausalLM.from_pretrained(self.finetuner_properties.lm_model_name, load_in_8bit=self.finetuner_properties.useint8, device_map="auto")

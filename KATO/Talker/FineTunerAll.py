@@ -14,11 +14,11 @@ class FineTunerAll(FineTunerBase):
                 
 if __name__ == "__main__":
     properties = FineTunerPropertiesBase(
-        lm_model_name="stabilityai/japanese-stablelm-base-alpha-7b",
-        tokenizer_model_name="novelai/nerdstash-tokenizer-v1",
+        lm_model_name="line-corporation/japanese-large-lm-3.6b",
+        tokenizer_model_name="line-corporation/japanese-large-lm-3.6b",
         year="2015",
-        sample_n=100,
-        ta_train_batch_size=1,
+        sample_n=3,
+        ta_train_batch_size=4,
         teacher_data_path=pathlib.Path(__file__).parent / "teacher_data_all",
         output_dir=pathlib.Path(__file__).parent / "output_all"
     )
