@@ -1,4 +1,5 @@
 from KATO.Base import LMTesterBase, LMParameters
+import pathlib
 
 class LMParametersAll(LMParameters):
     def __init__(
@@ -42,6 +43,31 @@ class LMTesterAll(LMTesterBase):
             output += output_new[len(prompt_new):]
             
         return output
+    
+    def test_talking(
+        self,
+        start_list: list,
+        params: LMParametersAll,
+    ):
+        '''
+        複数のトークを行う。
+        '''
+        
+        outputs = []
+        for start in start_list:
+            outputs.append(self.talk(start, params))
+            
+        self.save_outputs(outputs)
+            
+        return outputs
+    
+    def save_outputs(self, outputs):
+        '''
+        トークの結果を保存する。
+        '''
+        with open(pathlib.Path(__file__).parent / "output.txt", mode='w', encoding="utf-8") as f:
+            for output in outputs:
+                f.write(output + "\n")
 
 if __name__ == '__main__':
     lmtester = LMTesterAll()

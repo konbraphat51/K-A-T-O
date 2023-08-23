@@ -1,3 +1,4 @@
 output_dir_*
 __pycache__/
 output_*
+output.txt
