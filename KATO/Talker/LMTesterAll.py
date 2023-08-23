@@ -1,6 +1,6 @@
-from KATO.Base import LMTester, LMParameters
+from KATO.Base import LMTesterBase, LMParameters
 
-class LMTesterAll(LMTester):
+class LMTesterAll(LMTesterBase):
     pass
 
 if __name__ == '__main__':
@@ -16,10 +16,10 @@ if __name__ == '__main__':
     )
     
     lmtester.prepare(
-        lm_model_name = "line-corporation/japanese-large-lm-3.6b",
-        tokenizer_model_name = "line-corporation/japanese-large-lm-3.6b",
+        lm_model_name = "cyberagent/open-calm-3b",
+        tokenizer_model_name = "cyberagent/open-calm-3b",
         useint8 = True,
-        peft_model_name = "konbraphat51/KATO_talker_202308200416"
+        peft_model_name = "konbraphat51/KATO_talker_202308230014"
     )
     
     start_list = [

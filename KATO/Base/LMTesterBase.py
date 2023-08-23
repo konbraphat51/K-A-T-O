@@ -31,7 +31,7 @@ class LMParameters:
         with open(path / "lm_properties.json", mode='w') as f:
             f.write(json_data)
 
-class LMTester:
+class LMTesterBase:
     '''
     できたLMを試すクラス
     '''

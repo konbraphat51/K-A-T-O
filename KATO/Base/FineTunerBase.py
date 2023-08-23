@@ -176,6 +176,10 @@ class FineTunerBase:
         trainer.train()
         model.config.use_cache = True
 
+        #GPUメモリ解放
+        model.to("cpu")
+        torch.cuda.empty_cache()
+
         model.save_pretrained(self.get_output_dir() / "peft") 
         
         self.finetuner_properties.save(self.get_output_dir())

@@ -1,3 +1,3 @@
 from .FineTunerBase import FineTunerBase, FineTunerPropertiesBase
 from .LabelerBase import LabelerBase
-from .LMTester import LMTester, LMParameters
+from .LMTesterBase import LMTesterBase, LMParameters
